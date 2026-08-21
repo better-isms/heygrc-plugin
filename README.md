@@ -47,6 +47,9 @@ See [pricing and plans](https://docs.heygrc.com/docs/pricing-and-plans).
 - Website: https://heygrc.com
 - Docs: https://docs.heygrc.com
 - Setup with your agent: https://docs.heygrc.com/docs/setup-with-an-agent
+- Privacy policy: https://trust.ismscopilot.com/en/privacy-policy
+- Terms: https://trust.ismscopilot.com/en/terms
+- Support: support@ismscopilot.com
 
 ## License
 
