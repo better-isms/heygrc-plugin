@@ -1,6 +1,11 @@
 ---
 name: heyGRC Compliance Review
-description: Set up and run heyGRC compliance review on a repository's pull requests. Use when the user wants GRC or security compliance review of their code changes against ISO 27001, SOC 2, GDPR, DORA, NIS 2, or the EU AI Act: installing the heyGRC GitHub App, configuring the company profile and frameworks as code, and choosing how often reviews run.
+description: >
+  Set up and run heyGRC compliance review on a repository's pull requests.
+  Use when the user wants GRC or security compliance review of their code
+  changes against ISO 27001, SOC 2, GDPR, DORA, NIS 2, or the EU AI Act,
+  including installing the heyGRC GitHub App, configuring the company
+  profile and frameworks as code, and choosing how often reviews run.
 ---
 
 # heyGRC compliance review
