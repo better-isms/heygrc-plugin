@@ -1,7 +1,7 @@
 {
   "name": "heygrc",
   "description": "heyGRC: GRC compliance review for your pull requests, by Better ISMS.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "owner": {
     "name": "Better ISMS",
     "email": "support@ismscopilot.com",

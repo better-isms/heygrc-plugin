@@ -1,4 +1,4 @@
-# heyGRC for Claude Code
+# heyGRC for coding agents
 
 **GRC compliance review for your pull requests.** heyGRC reviews each PR against ISO 27001, SOC 2,
 GDPR, the EU AI Act, DORA, NIS 2 and your own company profile, then posts inline findings, a neutral
@@ -6,23 +6,49 @@ check run, and a sticky summary comment. Public repositories are free.
 
 By [Better ISMS](https://heygrc.com).
 
+This plugin does **not** review code on your machine. It is a setup skill that installs and
+configures the [heyGRC GitHub App](https://github.com/apps/heygrc). Reviews run server-side.
+
 ## Install
 
-This repository is a self-hosted Claude Code plugin marketplace. Add it and install the plugin:
+### Claude Code
 
 ```
 /plugin marketplace add better-isms/heygrc-plugin
 /plugin install heygrc@heygrc
 ```
 
-Then run the setup skill:
+Then run `/heygrc:review`.
+
+### Cursor
+
+Load the repo as an Agent Plugin (root `plugin.json`) from Customize, or submit/install from
+the Cursor Marketplace once listed. Local test: symlink this repo into `~/.cursor/plugins/local/heygrc`.
+
+### Codex CLI
 
 ```
-/heygrc:review
+codex plugin marketplace add better-isms/heygrc-plugin
 ```
 
-It walks you through installing the heyGRC GitHub App, configuring your company profile and
-frameworks as code, and choosing how often reviews run. Full instructions are in [SETUP.md](./SETUP.md).
+Then `/plugins` and install `heygrc`.
+
+### GitHub Copilot CLI
+
+Copilot CLI reads `.claude-plugin/marketplace.json`:
+
+```
+copilot plugin marketplace add better-isms/heygrc-plugin
+copilot plugin install heygrc@heygrc
+```
+
+### Any Agent Skills client
+
+```
+npx skills add better-isms/heygrc-plugin
+```
+
+After install, ask the agent to set up heyGRC compliance review. Full steps: [SETUP.md](./SETUP.md).
 
 ## What it does
 

@@ -1,6 +1,6 @@
 {
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "heygrc",
-  "displayName": "heyGRC",
   "version": "0.1.1",
   "description": "GRC compliance review for your pull requests. heyGRC reviews each PR against ISO 27001, SOC 2, GDPR, the EU AI Act and your own company profile, then posts inline findings, a neutral check run, and a sticky summary. Public repos are free.",
   "author": {
@@ -20,8 +20,6 @@
     "iso-27001",
     "soc-2",
     "gdpr",
-    "eu-ai-act",
-    "dora",
-    "nis-2"
+    "eu-ai-act"
   ]
 }

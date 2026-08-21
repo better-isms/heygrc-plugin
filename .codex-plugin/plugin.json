@@ -1,0 +1,43 @@
+{
+  "name": "heygrc",
+  "version": "0.1.1",
+  "description": "GRC compliance review for your pull requests. heyGRC reviews each PR against ISO 27001, SOC 2, GDPR, the EU AI Act and your own company profile, then posts inline findings, a neutral check run, and a sticky summary. Public repos are free.",
+  "author": {
+    "name": "Better ISMS",
+    "email": "support@ismscopilot.com",
+    "url": "https://heygrc.com"
+  },
+  "homepage": "https://heygrc.com",
+  "repository": "https://github.com/better-isms/heygrc-plugin",
+  "license": "MIT",
+  "keywords": [
+    "heygrc",
+    "grc",
+    "compliance",
+    "code-review",
+    "iso-27001",
+    "soc-2",
+    "gdpr"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "heyGRC",
+    "shortDescription": "Compliance review for pull requests against ISO 27001, SOC 2, GDPR, and the EU AI Act",
+    "longDescription": "heyGRC reviews each pull request against the frameworks your company must comply with (ISO 27001, SOC 2, GDPR, the EU AI Act, and more), grounded in your company profile. It posts inline findings, a neutral check run, and one sticky summary. This plugin does not review code locally. It walks you through installing the heyGRC GitHub App so reviews run server-side. Public repositories are free.",
+    "developerName": "Better ISMS",
+    "category": "Developer Tools",
+    "capabilities": ["Read"],
+    "websiteURL": "https://heygrc.com",
+    "privacyPolicyURL": "https://trust.ismscopilot.com/en/privacy-policy",
+    "termsOfServiceURL": "https://trust.ismscopilot.com/en/terms",
+    "defaultPrompt": [
+      "Set up heyGRC compliance review on this repository.",
+      "Install the heyGRC GitHub App and configure ISO 27001, SOC 2, and GDPR on our PRs.",
+      "How do I get compliance findings on this pull request without blocking the merge?"
+    ],
+    "brandColor": "#815CE9",
+    "composerIcon": "./assets/logo.png",
+    "logo": "./assets/logo.png",
+    "screenshots": []
+  }
+}
