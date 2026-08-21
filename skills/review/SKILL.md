@@ -1,5 +1,5 @@
 ---
-name: heyGRC Compliance Review
+name: review
 description: >
   Set up and run heyGRC compliance review on a repository's pull requests.
   Use when the user wants GRC or security compliance review of their code
@@ -32,7 +32,7 @@ installed on the repository. Your job (and this skill's job) is to get it instal
 The one-click install is an account-owner action that no agent or API can do for the user, so hand
 them the install link and let them click it.
 
-Full step-by-step instructions live in [SETUP.md](../../SETUP.md).
+Full step-by-step instructions live in [SETUP.md](SETUP.md).
 
 ## Setup flow
 
