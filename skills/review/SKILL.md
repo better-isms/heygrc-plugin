@@ -37,11 +37,16 @@ Full step-by-step instructions live in [SETUP.md](SETUP.md).
 ## Setup flow
 
 **1. Install the GitHub App (the user clicks this once).**
-Send them to:
+Send them the install link matching the tool you are running in (you know which one you are):
 
-```
-https://github.com/apps/heygrc/installations/new?via=claude-plugin
-```
+| You are running in | Send this link |
+|------|----------|
+| Claude Code | `https://github.com/apps/heygrc/installations/new?via=claude-plugin` |
+| Codex CLI | `https://github.com/apps/heygrc/installations/new?via=codex-cli` |
+| Cursor | `https://github.com/apps/heygrc/installations/new?via=cursor` |
+| GitHub Copilot CLI | `https://github.com/apps/heygrc/installations/new?via=copilot-cli` |
+| Gemini CLI | `https://github.com/apps/heygrc/installations/new?via=gemini-cli` |
+| Anything else | `https://github.com/apps/heygrc/installations/new?via=agent-plugin` |
 
 Choose the org or account, select the specific repositories, and Install. heyGRC asks only for
 read-only Contents and metadata, plus read + write on Checks and Pull requests. A bare install already

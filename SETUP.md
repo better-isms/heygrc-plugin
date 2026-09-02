@@ -10,7 +10,8 @@ about three minutes.
 Installing a GitHub App is an account-owner action, so this is the one step no agent or API can do for
 you:
 
-1. Go to **https://github.com/apps/heygrc/installations/new?via=claude-plugin**
+1. Go to **https://github.com/apps/heygrc/installations/new** (your agent may append a `?via=` source
+   tag to this link; keep it, it does not change the install).
 2. Choose your org or account → **Only select repositories** → pick the repo(s) → **Install**.
 
 heyGRC asks for the minimum it needs: **read-only** Contents and metadata; **read + write** Checks and

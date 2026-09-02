@@ -1,6 +1,6 @@
 {
   "name": "heygrc",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "GRC compliance review for your pull requests. heyGRC reviews each PR against ISO 27001, SOC 2, GDPR, the EU AI Act and your own company profile, then posts inline findings, a neutral check run, and a sticky summary. Public repos are free.",
   "author": {
     "name": "Better ISMS",
@@ -14,15 +14,20 @@
     "heygrc",
     "grc",
     "compliance",
+    "security",
     "code-review",
+    "pull-request",
     "iso-27001",
     "soc-2",
-    "gdpr"
+    "gdpr",
+    "eu-ai-act",
+    "dora",
+    "nis-2"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "heyGRC",
-    "shortDescription": "Compliance review for pull requests against ISO 27001, SOC 2, GDPR, and the EU AI Act",
+    "shortDescription": "Compliance review for pull requests against ISO 27001, SOC 2, GDPR, DORA, NIS 2, and the EU AI Act",
     "longDescription": "heyGRC reviews each pull request against the frameworks your company must comply with (ISO 27001, SOC 2, GDPR, the EU AI Act, and more), grounded in your company profile. It posts inline findings, a neutral check run, and one sticky summary. This plugin does not review code locally. It walks you through installing the heyGRC GitHub App so reviews run server-side. Public repositories are free.",
     "developerName": "Better ISMS",
     "category": "Developer Tools",

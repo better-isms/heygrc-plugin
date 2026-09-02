@@ -48,7 +48,22 @@ copilot plugin install heygrc@heygrc
 npx skills add better-isms/heygrc-plugin
 ```
 
+### Gemini CLI
+
+```
+gemini extensions install https://github.com/better-isms/heygrc-plugin
+```
+
+Also indexed in the Gemini CLI extension gallery (geminicli.com/extensions).
+
 After install, ask the agent to set up heyGRC compliance review. Full steps: [SETUP.md](./SETUP.md).
+
+## Where it is listed
+
+- OpenAI / ChatGPT Plugins Directory: https://chatgpt.com/plugins/plugins_6a886769f0fc8191a0d42669abca1f98
+- skills.sh: https://skills.sh/better-isms/heygrc-plugin
+- SkillsMP (auto-indexed)
+- The [heyGRC GitHub App](https://github.com/apps/heygrc) itself is on the GitHub Marketplace: https://github.com/marketplace/heygrc
 
 ## What it does
 

@@ -1,0 +1,6 @@
+{
+  "name": "heygrc",
+  "version": "0.1.2",
+  "description": "GRC compliance review for pull requests: set up the heyGRC GitHub App, configure company profile and frameworks as code, choose review cadence. Public repos are free.",
+  "contextFileName": "GEMINI.md"
+}
