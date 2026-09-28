@@ -10,7 +10,8 @@ This plugin does **not** review code on your machine. It has two skills:
 
 - **`review`** (`/heygrc:review`): installs and configures the
   [heyGRC GitHub App](https://github.com/apps/heygrc). Reviews run server-side.
-- **`setup`** (`/heygrc:setup`, or "set up heyGRC context"): your agent reads your compliance
+- **`setup`** (preview, available once enabled for your organization; `/heygrc:setup`, or
+  "set up heyGRC context"): your agent reads your compliance
   platform (Probo first, read-only) and the Google Drive files you name, shows exactly what it would
   send, and after your yes pushes your policies, controls, vendors, risks and data inventory to
   heyGRC, so reviews cite *your* rules. Needs an API key with the `context:read` and
@@ -25,7 +26,8 @@ This plugin does **not** review code on your machine. It has two skills:
 /plugin install heygrc@heygrc
 ```
 
-Then run `/heygrc:review`, and `/heygrc:setup` to push your compliance context.
+Then run `/heygrc:review`. `/heygrc:setup` (preview) pushes your compliance context once it is
+enabled for your organization.
 
 ### Cursor
 

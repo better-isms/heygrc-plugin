@@ -39,7 +39,7 @@
       "Set up heyGRC compliance review on this repository.",
       "Install the heyGRC GitHub App and configure ISO 27001, SOC 2, and GDPR on our PRs.",
       "How do I get compliance findings on this pull request without blocking the merge?",
-      "Set up heyGRC context from our Probo policies, controls and vendors."
+      "Set up heyGRC context (preview) from our Probo policies, controls and vendors."
     ],
     "brandColor": "#815CE9",
     "composerIcon": "./assets/logo.png",
