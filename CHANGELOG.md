@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0
+
+- New `setup` skill (`/heygrc:setup`, or "set up heyGRC context"): your agent reads your Probo
+  organization through its MCP server (read-only tool allowlist, published document versions only)
+  and any Google Drive files you name, maps policies, controls, vendors, risks and data inventory to
+  heyGRC context objects, shows a manifest, and pushes to `PUT /v1/context` only after you say yes.
+  SECRET documents are never sent; signatures, approvals and people fields are always excluded.
+  Removals found by a re-run are held for approval, never applied automatically. Re-running the
+  skill is the sync.
+- `skills/setup/context-batch.schema.json`: JSON Schema and examples for the context API body.
+- Manifest versions aligned at 0.2.0.
+
 ## 0.1.2
 
 - Gemini CLI extension: `gemini-extension.json` + `GEMINI.md` context (install via

@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/better-isms/heygrc-plugin/skills/setup/context-batch.schema.json",
+  "title": "heyGRC PUT /v1/context request body",
+  "description": "One request: either an upsert batch (no sync) or the final full-sync manifest for a source and kinds. Limits: 1 MB body, 200 objects per batch, 200,000 characters of text per object, 32,000 characters of fields per object, about 2,000 objects per org.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source", "objects"],
+  "properties": {
+    "source": { "enum": ["probo", "drive", "url", "manual"] },
+    "sync": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "kinds", "present_ids"],
+      "properties": {
+        "mode": { "const": "full" },
+        "kinds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/kind" }
+        },
+        "present_ids": {
+          "description": "Every upstream_id of these kinds still present upstream. Objects heyGRC holds for these kinds that are not listed are marked for removal and held for approval.",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+        }
+      }
+    },
+    "objects": {
+      "type": "array",
+      "maxItems": 200,
+      "items": { "$ref": "#/$defs/object" }
+    }
+  },
+  "$defs": {
+    "kind": {
+      "enum": ["policy_section", "control", "commitment", "vendor", "risk", "data_category", "other"]
+    },
+    "object": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["upstream_id", "upstream_version", "kind", "title"],
+      "properties": {
+        "upstream_id": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "upstream_version": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "kind": { "$ref": "#/$defs/kind" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "text": { "type": "string", "maxLength": 200000 },
+        "fields": { "type": "object" },
+        "classification": {
+          "description": "PUBLIC: quotable on any repo. INTERNAL: quotable on private repos. CONFIDENTIAL or absent: used in reviews, never quoted. SECRET: rejected, and any stored copy erased.",
+          "enum": ["PUBLIC", "INTERNAL", "CONFIDENTIAL", "SECRET"]
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "source": "probo",
+      "objects": [
+        {
+          "upstream_id": "probo-document-id",
+          "upstream_version": "0003.0000+m1",
+          "kind": "policy_section",
+          "title": "Access Control Policy",
+          "text": "# Access Control Policy\n\n## Scope\n...",
+          "fields": {
+            "document_type": "POLICY",
+            "version": "3.0",
+            "probo_version_id": "probo-version-id",
+            "published_at": "2026-09-01T10:00:00Z"
+          },
+          "classification": "INTERNAL"
+        },
+        {
+          "upstream_id": "probo-control-id",
+          "upstream_version": "2026-09-01T10:00:00Z+m1",
+          "kind": "control",
+          "title": "A.5.15 Access control",
+          "text": "A.5.15 Access control (ISO/IEC 27001:2022)\n\nRules to control access are established.",
+          "fields": {
+            "name": "Access control",
+            "control_id": "A.5.15",
+            "framework": "ISO/IEC 27001:2022",
+            "framework_mappings": [{ "framework": "ISO/IEC 27001:2022", "control_id": "A.5.15" }],
+            "description": "Rules to control access are established."
+          }
+        },
+        {
+          "upstream_id": "probo-third-party-id",
+          "upstream_version": "2026-08-12T08:30:00Z+m1",
+          "kind": "vendor",
+          "title": "Example Analytics",
+          "text": "Vendor: Example Analytics\nCategory: ANALYTICS\nWebsite: https://analytics.example.com",
+          "fields": {
+            "name": "Example Analytics",
+            "aliases": ["Example Analytics Inc."],
+            "category": "ANALYTICS",
+            "website": "https://analytics.example.com"
+          }
+        },
+        {
+          "upstream_id": "probo-secret-document-id",
+          "upstream_version": "0001.0000+m1",
+          "kind": "policy_section",
+          "title": "Withheld (SECRET)",
+          "classification": "SECRET"
+        }
+      ]
+    },
+    {
+      "source": "probo",
+      "sync": {
+        "mode": "full",
+        "kinds": ["policy_section", "control", "vendor"],
+        "present_ids": ["probo-document-id", "probo-secret-document-id", "probo-control-id", "probo-third-party-id"]
+      },
+      "objects": []
+    }
+  ]
+}

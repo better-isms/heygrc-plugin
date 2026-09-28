@@ -6,8 +6,15 @@ check run, and a sticky summary comment. Public repositories are free.
 
 By [Better ISMS](https://heygrc.com).
 
-This plugin does **not** review code on your machine. It is a setup skill that installs and
-configures the [heyGRC GitHub App](https://github.com/apps/heygrc). Reviews run server-side.
+This plugin does **not** review code on your machine. It has two skills:
+
+- **`review`** (`/heygrc:review`): installs and configures the
+  [heyGRC GitHub App](https://github.com/apps/heygrc). Reviews run server-side.
+- **`setup`** (`/heygrc:setup`, or "set up heyGRC context"): your agent reads your compliance
+  platform (Probo first, read-only) and the Google Drive files you name, shows exactly what it would
+  send, and after your yes pushes your policies, controls, vendors, risks and data inventory to
+  heyGRC, so reviews cite *your* rules. Needs an API key with the `context:read` and
+  `context:write` scopes in `HEYGRC_API_KEY`. Re-run it to sync.
 
 ## Install
 
@@ -18,7 +25,7 @@ configures the [heyGRC GitHub App](https://github.com/apps/heygrc). Reviews run 
 /plugin install heygrc@heygrc
 ```
 
-Then run `/heygrc:review`.
+Then run `/heygrc:review`, and `/heygrc:setup` to push your compliance context.
 
 ### Cursor
 
