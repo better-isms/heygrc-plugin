@@ -15,12 +15,11 @@
   (the old console host no longer accepts MCP calls); a configurable self-hosted Probo base URL
   (`PROBO_BASE_URL`); a plain stop message with the one fix when a Probo key sees no organization;
   the manifest now opens with the policy-type drafts it excludes, by title, so you can publish
-  them; `personal_data_category` lists split on semicolons (commas only when there is no semicolon), never
-  inside parentheses;
+  them; `personal_data_category` lists split on semicolons and line breaks (commas only when there is
+  neither), never inside parentheses;
   control and risk titles no longer repeat the reference; honest compile time with a progress
-  check via `GET /v1/context/summary`. Mapping version is now `+m2`: the first run
-  after this change reports most objects as updated; that is the mapping change, not an edit in
-  Probo.
+  check via `GET /v1/context/summary`. Mapping version is now `+m2`: every object reports updated once;
+  unchanged documents reuse their compiled rules with no model cost.
 
 ## 0.1.2
 

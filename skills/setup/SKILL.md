@@ -158,7 +158,7 @@ change always bumps it, so changed `text` or `fields` is a new version, never a 
    with its `id`. Skip it unless `status` is `PUBLISHED`.
    **Drafts.** A document with no PUBLISHED version is a draft: it is never sent, in any form.
    Call `listDocumentVersions` once more for it with `size: 1`, without the status filter and
-   without pagination, with the same `order_by`, and read only the newest version's `title` and `document_type` for the manifest
+   without pagination, with the same `order_by`, and read only the newest version's `title`, `document_type` and `classification` for the manifest
    (step 5). Never call `getDocumentVersion` for a draft, and never copy any draft content.
 4. `classification` SECRET: send only withheld markers (so heyGRC erases any earlier copy), no
    text, no fields, no real title:
