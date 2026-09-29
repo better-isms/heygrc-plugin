@@ -31,7 +31,8 @@ JSON shape of a request body is in [context-batch.schema.json](context-batch.sch
    echo it, write it to a file, put it in a URL, or ask the human to paste it into the chat.
    Never run curl with `-v` or `--trace`, or a shell with `set -x`. Send it only as
    `Authorization: Bearer $HEYGRC_API_KEY`.
-3. **Published only, never SECRET, no people.** Only PUBLISHED Probo document versions. SECRET
+3. **Published only, never SECRET, no people.** Only PUBLISHED Probo document versions are sent.
+   A draft's title and type are shown to the human in the manifest and never sent. SECRET
    content is never sent. Never send signatures, approvals, approvers, owners, administrators,
    contacts, user or profile ids, or anyone's name as a field.
 4. **Nothing is sent before an explicit yes** from the human after the manifest (step 5), unless
@@ -74,8 +75,8 @@ on the part after the last `__` or `.`). Allowlist, pinned against Probo's MCP s
 | Tool | Used for |
 |---|---|
 | `listOrganizations` | pick the Probo organization |
-| `listDocuments` | published, active documents |
-| `listDocumentVersions` | find the current published version |
+| `listDocuments` | active documents (drafts are only named in the manifest) |
+| `listDocumentVersions` | find the current published version; a draft's title and type |
 | `getDocumentVersion` | version content when the list omits it |
 | `listFrameworks` | framework names for control mappings |
 | `listControls` | controls |
@@ -90,9 +91,35 @@ the kind in the final sync (step 6.3). `data_category` comes from both `listData
 `listProcessingActivities`: if either is missing or incomplete, `data_category` is incomplete
 (never send a partial `present_ids`).
 
-`listOrganizations`: if it returns more than one organization, ask which one. Pass its
-`organization_id` to every list call. Paginate every list tool with `size: 100` and `cursor` =
-the previous `next_cursor` until `next_cursor` is null.
+**Which Probo.** The skill reaches Probo only through the Probo MCP server configured in the
+harness. Its endpoint is always `<Probo base URL>/api/mcp/v1`, and the base URL depends on where
+the Probo organization lives:
+
+| Probo | Base URL |
+|---|---|
+| Probo cloud, EU | `https://eu.probo.com`. The old `https://eu.console.getprobo.com` answers with a 301 redirect and a POST to it fails (403), so an MCP server still configured with the old host never connects. |
+| Probo cloud, another region | the host in the address bar of that Probo console |
+| Self-hosted Probo | the self-hosted Probo base URL, for example `https://probo.example.com` |
+
+The base URL is configurable: if `PROBO_BASE_URL` is set in the environment, use it; otherwise
+read it from the MCP server's configured URL (strip `/api/mcp/v1`), or ask the human. Use it only
+in messages and to help configure the MCP server; this skill never calls Probo outside the MCP
+tools in the allowlist.
+
+If no Probo MCP server is configured, or it fails to connect, ask: "Where does your Probo run:
+Probo cloud EU, another Probo cloud region, or self-hosted? Give me the base URL of your Probo
+console." Then tell the human to add the MCP server at `<base URL>/api/mcp/v1` with an
+organization API key issued by that same Probo, sent as a Bearer token and stored in the
+harness's secret store. Never ask for the Probo key in the chat. A key works only on the instance
+that issued it: a Probo cloud key sees nothing on a self-hosted instance, and the reverse.
+
+`listOrganizations`: if it returns zero organizations, stop and say, in these words: "This Probo
+key sees no organization on <base URL>. Fix: point the Probo MCP server at the Probo that holds
+your organization (`https://eu.probo.com/api/mcp/v1` for Probo cloud EU, or your self-hosted Probo
+base URL plus `/api/mcp/v1`) and use an API key issued by that same Probo." If it returns more
+than one organization, ask which one. Pass its `organization_id` to every list call. Paginate
+every list tool with `size: 100` and `cursor` = the previous `next_cursor` until `next_cursor` is
+null.
 
 **Google Drive (optional).** If the harness has a Google Drive tool, ask: "Do you want to include
 Google Drive files? Name the files or folders." Include only what the human names (a folder means
@@ -108,20 +135,27 @@ Probo's MCP server to this harness (see Probo's docs), then run me again."
 
 Every object has exactly these keys: `upstream_id`, `upstream_version`, `kind`, `title`, `text`,
 `fields`, and optionally `classification`. `fields` uses only the snake_case keys listed below
-(never two keys that differ only in case or spacing). The `+m1` suffix is this mapping's version;
-keep it exactly.
+(never two keys that differ only in case or spacing). The `+m2` suffix is this mapping's version;
+keep it exactly. (`m2`, 2026-09-29: control and risk titles, `examples` list parsing. A mapping
+change always bumps it, so changed output is a new version, never a `version_conflict`.)
 
 **3.1 Documents (kind `policy_section`).**
 
-1. `listDocuments` with `filter: {"status": ["ACTIVE"], "published": true}`.
+1. `listDocuments` with `filter: {"status": ["ACTIVE"]}` (drafts included, so the manifest can
+   name them). `listDocuments` returns no `document_type` or `title`; both come from a version.
 2. Include `document_type` POLICY, PROCEDURE, GOVERNANCE, PLAN, STATEMENT_OF_APPLICABILITY and
-   OTHER. Exclude REGISTER, RECORD, REPORT and TEMPLATE by default (list them as excluded; include
-   them only if the human asks).
+   OTHER ("policy-type"). Exclude REGISTER, RECORD, REPORT and TEMPLATE by default (list them as
+   excluded; include them only if the human asks). Classify each document from the version chosen
+   in 3.1.3, after reading it.
 3. For each document: `listDocumentVersions` with `document_id`,
    `filter: {"statuses": ["PUBLISHED"]}`, `order_by: {"field": "CREATED_AT", "direction": "DESC"}`.
    Pick the version whose `major`/`minor` equal the document's `current_published_major`/`minor`;
    if none matches, the first (newest) one. If its `content` is empty, call `getDocumentVersion`
    with its `id`. Skip it unless `status` is `PUBLISHED`.
+   **Drafts.** A document with no PUBLISHED version is a draft: it is never sent, in any form.
+   Call `listDocumentVersions` once more for it, without the status filter, with the same
+   `order_by`, and read only the newest version's `title` and `document_type` for the manifest
+   (step 5). Never call `getDocumentVersion` for a draft, and never copy any draft content.
 4. `classification` SECRET: send only withheld markers (so heyGRC erases any earlier copy), no
    text, no fields, no real title:
    `{"upstream_id": "<id>", "upstream_version": "<version>", "kind": "policy_section", "title": "Withheld (SECRET)", "classification": "SECRET"}`.
@@ -132,7 +166,7 @@ keep it exactly.
    keep every `upstream_id` that starts with `<document id>#`.
 5. Otherwise one object per document:
    - `upstream_id`: the Probo document id.
-   - `upstream_version`: major and minor zero-padded to 4 digits, plus the suffix, for example `0002.0001+m1`.
+   - `upstream_version`: major and minor zero-padded to 4 digits, plus the suffix, for example `0002.0001+m2`.
    - `title`: the version `title`. `text`: the version `content` (markdown), unchanged.
    - `classification`: the version `classification` (PUBLIC, INTERNAL or CONFIDENTIAL).
    - `fields`: `{"document_type": "<the chosen version's document_type>", "version": "<major>.<minor>", "probo_version_id": "<version id>", "published_at": "<published_at>"}`.
@@ -143,18 +177,26 @@ keep it exactly.
    `title` becomes `<title>: <heading>`, and `fields.section` = the heading. A section still over
    150,000 characters is cut into consecutive parts `#s<NN>p<M>`.
 
-**3.2 Structured records.** `upstream_version` = the record's `updated_at` plus `+m1`, for example
-`2026-09-01T10:00:00Z+m1`. `upstream_id` = the record `id`. Build `fields` with exactly the keys
+**3.2 Structured records.** `upstream_version` = the record's `updated_at` plus `+m2`, for example
+`2026-09-01T10:00:00Z+m2`. `upstream_id` = the record `id`. Build `fields` with exactly the keys
 below, in that order, from the named Probo property; drop a key whose value is null, empty string
 or empty array.
 
 | Probo tool | kind | title | fields, in order (Probo property) |
 |---|---|---|---|
-| `listControls` (+ `listFrameworks` for the name of `framework_id`) | `control` | `<section_title> <name>` | `name`, `control_id` (section_title), `framework` (framework name), `framework_mappings` (`[{"control_id": <section_title>, "framework": <framework name>}]`), `description`, `maturity_level`, `best_practice`, `not_implemented_justification` |
+| `listControls` (+ `listFrameworks` for the name of `framework_id`) | `control` | `<section_title> <name>`, or just `<name>` when `name` already starts with `section_title` | `name`, `control_id` (section_title), `framework` (framework name), `framework_mappings` (`[{"control_id": <section_title>, "framework": <framework name>}]`), `description`, `maturity_level`, `best_practice`, `not_implemented_justification` |
 | `listThirdParties` (level 1 only) | `vendor` | `<name>` | `name`, `aliases` (`[legal_name]` only when it differs from name), `category`, `website` (website_url), `description`, `countries`, `certifications`, `dpa_url` (data_processing_agreement_url), `subprocessors_url` (subprocessors_list_url) |
-| `listRisks` | `risk` | `<reference_id> <name>` | `name`, `reference_id`, `category`, `description`, `treatment`, `inherent_risk_score`, `residual_risk_score`, `note` |
+| `listRisks` | `risk` | `<reference_id> <name>`, or just `<name>` when the record has no `reference_id` or `name` already starts with it (many Probo organizations keep the reference inside `name`, for example `R-001: ...`) | `name`, `reference_id`, `category`, `description`, `treatment`, `inherent_risk_score`, `residual_risk_score`, `note` |
 | `listData` | `data_category` | `<name>` | `name`, `register` (the constant `"data"`), `data_classification` |
-| `listProcessingActivities` | `data_category` | `<name>` | `name`, `register` (the constant `"processing_activity"`), `purpose`, `examples` (personal_data_category split on commas, trimmed), `data_subjects` (data_subject_category), `lawful_basis`, `retention` (retention_period), `recipients`, `location`, `international_transfers`, `transfer_safeguard`, `role`, `special_or_criminal_data` |
+| `listProcessingActivities` | `data_category` | `<name>` | `name`, `register` (the constant `"processing_activity"`), `purpose`, `examples` (personal_data_category: see **Lists** below), `data_subjects` (data_subject_category), `lawful_basis`, `retention` (retention_period), `recipients`, `location`, `international_transfers`, `transfer_safeguard`, `role`, `special_or_criminal_data` |
+
+**Lists.** Probo stores `personal_data_category` as one string with items separated by
+semicolons (`;`), sometimes by line breaks, and uses commas inside parentheses, for example
+`Account data (email, name); Usage data (IP address, not-reversible hash)`. Split only on `;` and
+line breaks that are outside parentheses. Never split on commas. Trim each item, drop a leading
+`-` or `*` bullet, drop empty items. A value with no separator is one item, kept whole. The
+example above gives exactly two items: `Account data (email, name)` and
+`Usage data (IP address, not-reversible hash)`.
 
 **Deterministic text** (so a re-run of an unchanged record hashes identically): `text` is built
 only from `fields`, one line per key in the order above, `<key>: <value>`, lines joined with a
@@ -184,7 +226,7 @@ record; it stays a field.
 ## Step 4: map Drive files (only if the human named files)
 
 Source `drive`, kind `policy_section`, `upstream_id` = the Drive file id, `upstream_version` =
-the file's `modifiedTime` plus `+m1`, `title` = the file name, `text` = the exported text,
+the file's `modifiedTime` plus `+m2`, `title` = the file name, `text` = the exported text,
 `fields: {"mime_type": "<mime>", "drive_url": "<webViewLink>"}`. No classification unless the
 human sets one per file in step 5 (PUBLIC, INTERNAL or CONFIDENTIAL). A file the human calls
 secret gets only a SECRET marker (3.1.4 shape, `upstream_id` = the file id, plus every stored
@@ -193,7 +235,19 @@ any stored copy; its content is never sent. Apply the 150,000-character split fr
 
 ## Step 5: manifest, then ask
 
-Print this, with real numbers, and nothing sent yet:
+Print this, with real numbers, and nothing sent yet. **Drafts come first.** If any policy-type
+document (3.1.2) is a draft (3.1.3), the manifest opens with these lines, before everything else
+and before the question:
+
+```
+<n> drafts excluded, publish them in Probo to use them:
+  - <title> (<document_type>)
+  - ...
+```
+
+List every policy-type draft by its title, one per line (a draft whose version `classification` is
+SECRET shows as `Withheld (SECRET draft)`, never its title). Other drafts (REGISTER, RECORD, REPORT,
+TEMPLATE) are only counted in `Excluded`. Then:
 
 ```
 heyGRC org: <org_id>            Probo organization: <name>
@@ -202,7 +256,7 @@ Would send (source probo):
   control         <n>  vendor <n>  risk <n>  data_category <n>
 Would send (source drive): policy_section <n>
 Withheld:  SECRET <n> (marker only, no content)
-Excluded:  <n> REGISTER/RECORD/REPORT/TEMPLATE docs, <n> unpublished, <n> unreadable Drive files,
+Excluded:  <n> REGISTER/RECORD/REPORT/TEMPLATE docs, <n> drafts (<m> of them policy-type, listed above), <n> unreadable Drive files,
            signatures, approvals and people fields (always)
 Incomplete kinds (no removal check this run): <kinds or "none">
 Kinds with zero objects (not synced, no removals this run): <kinds or "none">
@@ -260,8 +314,11 @@ update, reprint, ask again. Only `yes` continues. With `--yes`, print the manife
    `source/kind: active, removed_held`, `obligations_active`, `held.objects_removed_held`,
    `held.removal_batches`, `last_synced_at`.
 3. End with: "Next: open a pull request. heyGRC will cite your own policies once the context layer
-   is enabled for your org. Compilation runs in the background, so obligations may take a few
-   minutes to appear."
+   is enabled for your org. Compilation runs in the background and is not instant: a large corpus
+   takes several minutes (about 20 minutes for about 300 objects in a real test), and a review
+   opened before it finishes uses only what is already compiled. To follow progress, re-run the
+   summary call (`GET /v1/context/summary`, step 1.3): `obligations_active` grows while
+   compilation runs and stops changing when it is done." Never say "a few minutes".
 
 ## Step 8: clean up and re-run guidance
 

@@ -11,6 +11,13 @@
   skill is the sync.
 - `skills/setup/context-batch.schema.json`: JSON Schema and examples for the context API body.
 - Manifest and marketplace versions aligned at 0.2.0.
+- `setup` fixes from a real Probo dogfood (2026-09-29): Probo cloud EU is `https://eu.probo.com`
+  (the old console host no longer accepts MCP calls); a configurable self-hosted Probo base URL
+  (`PROBO_BASE_URL`); a plain stop message with the one fix when a Probo key sees no organization;
+  the manifest now opens with the policy-type drafts it excludes, by title, so you can publish
+  them; `personal_data_category` lists split on semicolons, never on commas inside parentheses;
+  control and risk titles no longer repeat the reference; honest compile time with a progress
+  check via `GET /v1/context/summary`. Mapping version is now `+m2`.
 
 ## 0.1.2
 

@@ -121,7 +121,7 @@
       "objects": [
         {
           "upstream_id": "probo-document-id",
-          "upstream_version": "0003.0000+m1",
+          "upstream_version": "0003.0000+m2",
           "kind": "policy_section",
           "title": "Access Control Policy",
           "text": "# Access Control Policy\n\n## Scope\n...",
@@ -135,7 +135,7 @@
         },
         {
           "upstream_id": "probo-control-id",
-          "upstream_version": "2026-09-01T10:00:00Z+m1",
+          "upstream_version": "2026-09-01T10:00:00Z+m2",
           "kind": "control",
           "title": "A.5.15 Access control",
           "text": "name: Access control\ncontrol_id: A.5.15\nframework: ISO/IEC 27001:2022\nframework_mappings: ISO/IEC 27001:2022 A.5.15\ndescription: Rules to control access are established.",
@@ -154,7 +154,7 @@
         },
         {
           "upstream_id": "probo-third-party-id",
-          "upstream_version": "2026-08-12T08:30:00Z+m1",
+          "upstream_version": "2026-08-12T08:30:00Z+m2",
           "kind": "vendor",
           "title": "Example Analytics",
           "text": "name: Example Analytics\naliases: Example Analytics Inc.\ncategory: ANALYTICS\nwebsite: https://analytics.example.com",
@@ -169,7 +169,7 @@
         },
         {
           "upstream_id": "probo-secret-document-id",
-          "upstream_version": "0001.0000+m1",
+          "upstream_version": "0001.0000+m2",
           "kind": "policy_section",
           "title": "Withheld (SECRET)",
           "classification": "SECRET"
