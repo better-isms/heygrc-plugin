@@ -132,26 +132,35 @@ heyGRC's. Use whichever of these the harness has; the skill does not depend on o
 | Route | How to recognise it |
 |---|---|
 | A Drive MCP connector | tools that search or list Drive files and return a file's content (for example the Google Drive connector in Claude) |
-| The Drive API with the human's own credential | a credential that already works in this shell, for example `gcloud auth print-access-token` for an account with a Drive read scope. Never ask for a Google token in the chat, never print it, never write it to a file |
+| The Drive API with the human's own credential | a credential with the `drive.readonly` scope that already works in this shell, for example gcloud logged in with that scope. Never re-authenticate with a broader scope |
 | Any other harness tool | it can return, per file, the id, name, MIME type, modified time and the text |
 
-Allowed Drive reads, whatever the route (Drive API v3 names; a connector's equivalents):
+**Read-only, whatever the route.** With the Drive API, only these GET requests:
 
 | Read | Used for |
 |---|---|
-| `files.list` | the files of a named folder: `q="'<folderId>' in parents and trashed=false"` |
-| `files.get` (metadata) | `id,name,mimeType,modifiedTime,webViewLink` of a named file |
-| `files.export` | a Google Doc as `text/markdown` (else `text/plain`) |
-| `files.get` with `alt=media` | the bytes of a `.md` or `.txt` file |
+| `files.list` | the files of a named folder: `q="'<folderId>' in parents and trashed=false"`, `pageSize=100`, `pageToken` until no `nextPageToken`, `supportsAllDrives=true`, `includeItemsFromAllDrives=true`, `fields=nextPageToken,files(id,name,mimeType,modifiedTime,webViewLink)` |
+| `files.get` (metadata) | a named file, `supportsAllDrives=true`, `fields=id,name,mimeType,modifiedTime,webViewLink` |
+| `files.export` | a Google Doc as `text/markdown` (else `text/plain`), `supportsAllDrives=true` |
+| `files.get` with `alt=media` | the bytes of a `.md` or `.txt` file, `supportsAllDrives=true` |
 
-Nothing else, and only GET requests on the Drive API. If there is a Drive tool, ask: "Do you want
-to include Google Drive files? Name the files or folders (links or ids)." Include only what the
-human names: a folder means its direct files; subfolders only if they say so. Accept Google Docs,
-`.md`, `.txt`, and PDF or `.docx` only when the tool itself returns their text. Skip Sheets,
-Slides, images, shortcuts, and anything the tool cannot read as text, and list them as excluded.
-A file whose tool gives no `modifiedTime` is excluded too ("no modified time, cannot version
-it"). If there is no Drive tool, say "No Drive tool found. Connect one (for example Claude's Google
-Drive connector) and run me again, or link the files in the heyGRC console."
+Always pass an explicit `fields` list, so owners, users and permissions are never read. A Google
+token goes only inside the header, `-H "Authorization: Bearer $(gcloud auth print-access-token)"`:
+never in a URL (`access_token=`), never in a variable that is printed, never pasted into the chat,
+and rule 2's ban on `-v`, `--trace` and `set -x` applies. With a connector or any other tool, call
+only tools that search, list, get, read, fetch, export or download; never one that creates,
+uploads, updates, copies, moves, renames, deletes, trashes, shares or comments.
+
+**Which files.** If there is a Drive tool, ask: "Do you want to include Google Drive files? Name
+the files or folders (links or ids)." With `--yes`, do not ask: include only Drive files or
+folders named in the invocation, otherwise skip Drive and say so. Include only what the human
+names: a folder means its direct files; subfolders only if they say so. Accept Google Docs,
+`.md` and `.txt` (recognise these two by the name's extension; their MIME type varies), and PDF or
+`.docx` only when the tool itself returns their text. Skip Sheets, Slides, images, shortcuts, and
+anything the tool cannot read as text, and list them as excluded. A file whose tool gives no
+modified time is excluded too ("no modified time, cannot version it"). If there is no Drive tool,
+say "No Drive tool found. Connect one (for example Claude's Google Drive connector) and run me
+again, or link the files in the heyGRC console."
 
 If neither Probo nor Drive is available, stop: "I found no Probo MCP server or Drive tool. Add
 Probo's MCP server to this harness (see Probo's docs), then run me again."
@@ -252,35 +261,44 @@ record; it stays a field.
 ## Step 4: map Drive files (only if the human named files)
 
 1. **List first, read later.** For each named file or folder, read metadata only (`files.get` or
-   `files.list`): `id`, `name`, `mimeType`, `modifiedTime`, `webViewLink`. Never read owners,
-   `lastModifyingUser`, permissions or sharing fields.
-2. **Skip unchanged files.** Page
+   `files.list`, step 2): `id`, `name`, `mimeType`, `modifiedTime`, `webViewLink`. Normalize
+   `modifiedTime` to UTC `YYYY-MM-DDTHH:MM:SS.sssZ` (milliseconds padded to 3 digits, for example
+   `2026-09-29T08:12:44Z` becomes `2026-09-29T08:12:44.000Z`) before building a version or
+   comparing one. Below, `<modifiedTime>` is always the normalized value. If a named file or
+   folder fails to list, it is **incomplete**: say so in the manifest.
+2. **Read what heyGRC holds.** Page
    `GET https://api.heygrc.com/v1/context/objects?source=drive&kind=policy_section&limit=500`
-   (same headers as step 1.3; follow `next_cursor` via `&cursor=<next_cursor>` until null). A file
-   is **unchanged** when heyGRC holds `gdrive:<file id>` (or split ids `gdrive:<file id>#s...`)
-   whose `upstream_version` is `<modifiedTime>+d1` or starts with `<modifiedTime>+d1-`, and whose
-   `disclosure` is the classification chosen for it this run, in lower case (`internal` by
-   default). Do not export an unchanged file and do not
-   send it; count it as unchanged and keep its stored upstream ids for step 6.3. Every other file is
-   **new** or **changed**: export it.
-3. **Export.** A Google Doc (`application/vnd.google-apps.document`): `files.export` as
+   (same headers as step 1.3; follow `next_cursor` via `&cursor=<next_cursor>` until null). A
+   file's **stored ids** are `gdrive:<file id>` and every `gdrive:<file id>#...`.
+3. **Disclosure.** A file heyGRC already holds (with `status` `active`) keeps its stored
+   `disclosure`, sent in upper case as `classification`. A new file is INTERNAL (quotable on
+   private repositories only). The human can change it in step 5 (`confidential`, `public`,
+   `secret`); with `--yes`, never change a stored disclosure.
+4. **Skip unchanged files.** A file is **unchanged** only when it has at least one stored id and
+   **every** stored id has `status` `active`, an `upstream_version` equal to `<modifiedTime>+d1`
+   or starting with `<modifiedTime>+d1-`, and a `disclosure` equal to the one from 4.3 in lower
+   case. Do not export an unchanged file and do not send it; count it as unchanged and keep its
+   stored ids for step 6.3. Every other file is **new** or **changed**: export it. A stored id
+   with `status` `removed` makes the file changed; if its title is `[erased]`, the file was
+   withheld as SECRET before: say so and ask before sending it (with `--yes`, do not send it).
+5. **Export.** A Google Doc (`application/vnd.google-apps.document`): `files.export` as
    `text/markdown`; if the route cannot, as `text/plain`. A `.md` or `.txt` file: its bytes, as
-   UTF-8. Keep the text unchanged.
-4. **One object per file:**
+   UTF-8. Keep the text unchanged. A file that fails to export is **incomplete**.
+6. **One object per file:**
    - source `drive`, kind `policy_section`.
    - `upstream_id`: `gdrive:<file id>`.
-   - `upstream_version`: the file's `modifiedTime` exactly as Drive returns it, plus `+d1` (this
-     mapping's version), for example `2026-09-29T08:12:44.512Z+d1`.
+   - `upstream_version`: `<modifiedTime>+d1` (`+d1` is this mapping's version), for example
+     `2026-09-29T08:12:44.512Z+d1`.
    - `title`: the file `name`. `text`: the exported text.
    - `fields`, in this order, dropping empty values:
-     `{"mime_type": "<mimeType>", "modified_time": "<modifiedTime>", "export_format": "text/markdown" or "text/plain", "drive_url": "<webViewLink>"}`.
-   - `classification`: `INTERNAL` by default (quotable on private repositories only). The human
-     can set `CONFIDENTIAL` (used in reviews, never quoted) or `PUBLIC` per file or for all files
-     in step 5.
-5. **Secret files.** A file the human calls secret is not exported. Send only SECRET markers (3.1.4
-   shape) for `gdrive:<file id>` and every stored `gdrive:<file id>#s...` id, which erases any
-   stored copy.
-6. Apply the 150,000-character split from 3.1.6 with ids `gdrive:<file id>#s<NN>`.
+     `{"mime_type": "<mimeType>", "modified_time": "<modifiedTime>", "export_format": "text/markdown" or "text/plain", "drive_url": "<webViewLink>"}`,
+     plus `section` (the heading) for a split object.
+   - `classification`: from 4.3.
+7. **Secret files.** A file the human calls secret is not exported. Send only SECRET markers (3.1.4
+   shape) for `gdrive:<file id>` and every stored id of that file, which erases any stored copy.
+8. Apply the 150,000-character split from 3.1.6 with ids `gdrive:<file id>#s<NN>`. Stored ids of a
+   changed file that this run no longer builds (a file that used to be split) stay active until a
+   Drive full sync or a removal in the console: count them for the manifest.
 
 ## Step 5: manifest, then ask
 
@@ -305,8 +323,10 @@ Would send (source probo):
   policy_section  <n>  (PUBLIC <a>, INTERNAL <b>, CONFIDENTIAL <c>; <k> split into sections)
   control         <n>  vendor <n>  risk <n>  data_category <n>
 Would send (source drive): policy_section <n> new, <n> changed; <n> unchanged, not re-sent
-  <name>  <Google Doc|md|txt|...>  modified <modifiedTime>  gdrive:<id>  <INTERNAL|CONFIDENTIAL|PUBLIC>  <new|changed|unchanged>
+  <name>  <Google Doc|md|txt|...>  modified <modifiedTime>  gdrive:<id>  <INTERNAL|CONFIDENTIAL|PUBLIC>  <new|changed|unchanged>  <k sections, if split>
   ...
+Drive incomplete (failed to list or export, no Drive full sync this run): <names or "none">
+Drive stale sections: <n> stored sections of changed files are no longer built. They stay active until a Drive full sync or a removal in the console.
 Withheld:  SECRET <n> (marker only, no content)
 Excluded:  <p> published REGISTER/RECORD/REPORT/TEMPLATE docs, <d> drafts (<m> of them policy-type, listed above), <n> unreadable Drive files,
            signatures, approvals and people fields (always)
@@ -320,7 +340,8 @@ Send? (yes / no / internal / include <type> / confidential <file or "drive"> / p
 
 List every Drive file on its own line, even unchanged ones. Wait for the answer. `no`: stop.
 `include <type>`, `internal`, `confidential ...`, `public ...` or `secret ...`: update, reprint, ask
-again (a changed disclosure makes an unchanged file changed). Only `yes` continues. With `--yes`, print the manifest and continue.
+again. A changed disclosure makes an unchanged Drive file changed: export it now (4.5), then
+reprint. Only `yes` continues. With `--yes`, print the manifest and continue.
 
 ## Step 6: push
 
@@ -345,7 +366,7 @@ again (a changed disclosure makes an unchanged file changed). Only `yes` continu
    A 200 body is `{"ok": true, "counts": {"created", "updated", "unchanged", "rejected"}, "results": [{"upstream_id", "result", "reason"?, "status"?}]}`.
    Keep every result. Other statuses: read `<dir>/headers.txt` (for `Retry-After`) and follow
    the error table.
-3. **Final sync (Probo only).** Only when every batch for the source returned 200 (per-object
+3. **Final sync.** No Probo this run: send no Probo sync. Probo: only when every batch for the source returned 200 (per-object
    rejections are fine; a stopped or failed batch means no final sync this run), send one request for the complete kinds (every kind read without error that has at
    least one object; never a kind that returned zero objects or was incomplete):
 
@@ -363,10 +384,12 @@ again (a changed disclosure makes an unchanged file changed). Only `yes` continu
 
    **Drive.** No final sync unless the human says the named files are the complete Drive set of
    this heyGRC org (anything else the org holds from Drive, pushed by anyone, would be held for
-   removal). Then send the same call with `"source": "drive"`, `"kinds": ["policy_section"]` and
-   `present_ids` = every `gdrive:` id built this run, **plus the stored ids of the unchanged files
-   skipped in 4.2** and of SECRET markers. Same rule as Probo: only when every drive batch returned
-   200.
+   removal). Never when a named file or folder was incomplete (4.1, 4.5). Then send the same call
+   with `"source": "drive"`, `"kinds": ["policy_section"]` and `present_ids` = every `gdrive:` id
+   built this run (sent objects, SECRET markers, rejected and too-large objects), **plus the stored
+   ids of the unchanged files skipped in 4.4**. Stored ids of files excluded this run (for example
+   an unreadable type) go in only if the human confirms they should stay. Same rule as Probo: only
+   when every drive batch returned 200.
 
 ## Step 7: report
 
@@ -409,7 +432,7 @@ again (a changed disclosure makes an unchanged file changed). Only `yes` continu
 | 5xx | Server error | Retry once after 10 seconds, then stop and report the `X-Request-Id`. |
 | result `rejected`, reason `classification_secret` | SECRET marker accepted; any stored copy erased | Report as withheld (expected). |
 | result `rejected`, reason `text_too_large` / `fields_too_large` | Object over 200,000 chars or fields over 32,000 | Report; split sections smaller next run. |
-| result `rejected`, status 409, reason `version_conflict` | Same version, different content | Probo: report; the record changed without a new version. Drive: the export differs from the stored copy of the same Drive revision (usually a different Drive tool); resend that object once with `upstream_version` `<modifiedTime>+d1-<first 8 hex of sha256 of the text>`. |
+| result `rejected`, status 409, reason `version_conflict` | Same version, different content | Probo: report; the record changed without a new version. Drive: the export differs from the stored copy of the same Drive revision (usually a different Drive tool); resend that object once with `upstream_version` `<modifiedTime>+d1-<first 8 hex of the sha256 of that object's exact text string>` (per section when split). |
 | result `rejected`, reason `fields_key_collision` | Two `fields` keys collide after normalization | Report; the object was not stored. |
 | result `rejected`, status 409, reason `stale_version` | A replay of an older version that is no longer current | Skip and report. |
 | result `rejected`, reason `not_processed` | The server did not process this object | Report; re-run later. |
