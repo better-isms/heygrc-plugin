@@ -177,6 +177,25 @@
       ]
     },
     {
+      "source": "drive",
+      "objects": [
+        {
+          "upstream_id": "gdrive:drive-file-id",
+          "upstream_version": "2026-09-29T08:12:44.512Z+d1",
+          "kind": "policy_section",
+          "title": "Logging Standard",
+          "text": "# Logging Standard\n\n- Application logs must never contain email addresses.\n...",
+          "fields": {
+            "mime_type": "application/vnd.google-apps.document",
+            "modified_time": "2026-09-29T08:12:44.512Z",
+            "export_format": "text/markdown",
+            "drive_url": "https://docs.google.com/document/d/drive-file-id/edit"
+          },
+          "classification": "INTERNAL"
+        }
+      ]
+    },
+    {
       "source": "probo",
       "sync": {
         "mode": "full",

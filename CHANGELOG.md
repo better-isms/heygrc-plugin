@@ -20,6 +20,13 @@
   control and risk titles no longer repeat the reference; honest compile time with a progress
   check via `GET /v1/context/summary`. Mapping version is now `+m2`: every object reports updated once;
   unchanged documents reuse their compiled rules with no model cost.
+- `setup` Drive source (2026-09-29): your agent reads the private Google Drive files you name with
+  its own Drive access (a Drive MCP connector, the Drive API with your own credential, or any tool
+  that returns id, modified time and text), read-only. Google Docs are exported as markdown. Each
+  file becomes one `policy_section` with id `gdrive:<file id>` and version `<modifiedTime>+d1`,
+  classified INTERNAL by default (say `confidential`, `public` or `secret` per file). The manifest
+  lists every file as new, changed or unchanged; a re-run exports and sends only files whose
+  modified time changed.
 
 ## 0.1.2
 

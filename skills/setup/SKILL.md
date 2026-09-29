@@ -26,7 +26,9 @@ JSON shape of a request body is in [context-batch.schema.json](context-batch.sch
    any tool not in that table, including every `add*`, `create*`, `update*`, `delete*`,
    `archive*`, `publish*`, `approve*`, `reject*`, `sign*`, `request*`, `cancel*`, `void*`,
    `link*`, `unlink*`, `vet*`, `invite*`, `remove*`, `revoke*`, `record*`, `flag*`, `close*`,
-   `assign*`, `set*` and `*Setup` tool. Never write to Drive.
+   `assign*`, `set*` and `*Setup` tool. Drive is read-only too: only the list, metadata and
+   export/download reads in step 2's Drive table. Never create, copy, move, rename, trash, share,
+   comment on or change the permissions of a Drive file.
 2. **The key stays secret.** Read `HEYGRC_API_KEY` from the environment only. Never print it,
    echo it, write it to a file, put it in a URL, or ask the human to paste it into the chat.
    Never run curl with `-v` or `--trace`, or a shell with `set -x`. Send it only as
@@ -124,12 +126,32 @@ than one organization, ask which one. Pass its `organization_id` to every list c
 every list tool with `size: 100` and `cursor` = the previous `next_cursor` until `next_cursor` is
 null.
 
-**Google Drive (optional).** If the harness has a Google Drive tool, ask: "Do you want to include
-Google Drive files? Name the files or folders." Include only what the human names (a folder means
-its direct files; subfolders only if they say so). Accept Google Docs, PDF, .docx, .md and .txt
-that the tool can return as text. Skip Sheets, Slides, images and anything the tool cannot read
-as text, and list them as excluded. If there is no Drive tool, say "No Drive tool found; you can
-also add Drive files in the heyGRC console."
+**Google Drive (optional).** Drive files are read with the agent's own Drive access, never
+heyGRC's. Use whichever of these the harness has; the skill does not depend on one of them:
+
+| Route | How to recognise it |
+|---|---|
+| A Drive MCP connector | tools that search or list Drive files and return a file's content (for example the Google Drive connector in Claude) |
+| The Drive API with the human's own credential | a credential that already works in this shell, for example `gcloud auth print-access-token` for an account with a Drive read scope. Never ask for a Google token in the chat, never print it, never write it to a file |
+| Any other harness tool | it can return, per file, the id, name, MIME type, modified time and the text |
+
+Allowed Drive reads, whatever the route (Drive API v3 names; a connector's equivalents):
+
+| Read | Used for |
+|---|---|
+| `files.list` | the files of a named folder: `q="'<folderId>' in parents and trashed=false"` |
+| `files.get` (metadata) | `id,name,mimeType,modifiedTime,webViewLink` of a named file |
+| `files.export` | a Google Doc as `text/markdown` (else `text/plain`) |
+| `files.get` with `alt=media` | the bytes of a `.md` or `.txt` file |
+
+Nothing else, and only GET requests on the Drive API. If there is a Drive tool, ask: "Do you want
+to include Google Drive files? Name the files or folders (links or ids)." Include only what the
+human names: a folder means its direct files; subfolders only if they say so. Accept Google Docs,
+`.md`, `.txt`, and PDF or `.docx` only when the tool itself returns their text. Skip Sheets,
+Slides, images, shortcuts, and anything the tool cannot read as text, and list them as excluded.
+A file whose tool gives no `modifiedTime` is excluded too ("no modified time, cannot version
+it"). If there is no Drive tool, say "No Drive tool found. Connect one (for example Claude's Google
+Drive connector) and run me again, or link the files in the heyGRC console."
 
 If neither Probo nor Drive is available, stop: "I found no Probo MCP server or Drive tool. Add
 Probo's MCP server to this harness (see Probo's docs), then run me again."
@@ -229,13 +251,36 @@ record; it stays a field.
 
 ## Step 4: map Drive files (only if the human named files)
 
-Source `drive`, kind `policy_section`, `upstream_id` = the Drive file id, `upstream_version` =
-the file's `modifiedTime` plus `+m2`, `title` = the file name, `text` = the exported text,
-`fields: {"mime_type": "<mime>", "drive_url": "<webViewLink>"}`. No classification unless the
-human sets one per file in step 5 (PUBLIC, INTERNAL or CONFIDENTIAL). A file the human calls
-secret gets only a SECRET marker (3.1.4 shape, `upstream_id` = the file id, plus every stored
-`<file id>#s...` id from `GET /v1/context/objects?source=drive&kind=policy_section`), which erases
-any stored copy; its content is never sent. Apply the 150,000-character split from 3.1.6.
+1. **List first, read later.** For each named file or folder, read metadata only (`files.get` or
+   `files.list`): `id`, `name`, `mimeType`, `modifiedTime`, `webViewLink`. Never read owners,
+   `lastModifyingUser`, permissions or sharing fields.
+2. **Skip unchanged files.** Page
+   `GET https://api.heygrc.com/v1/context/objects?source=drive&kind=policy_section&limit=500`
+   (same headers as step 1.3; follow `next_cursor` via `&cursor=<next_cursor>` until null). A file
+   is **unchanged** when heyGRC holds `gdrive:<file id>` (or split ids `gdrive:<file id>#s...`)
+   whose `upstream_version` is `<modifiedTime>+d1` or starts with `<modifiedTime>+d1-`, and whose
+   `disclosure` is the classification chosen for it this run, in lower case (`internal` by
+   default). Do not export an unchanged file and do not
+   send it; count it as unchanged and keep its stored upstream ids for step 6.3. Every other file is
+   **new** or **changed**: export it.
+3. **Export.** A Google Doc (`application/vnd.google-apps.document`): `files.export` as
+   `text/markdown`; if the route cannot, as `text/plain`. A `.md` or `.txt` file: its bytes, as
+   UTF-8. Keep the text unchanged.
+4. **One object per file:**
+   - source `drive`, kind `policy_section`.
+   - `upstream_id`: `gdrive:<file id>`.
+   - `upstream_version`: the file's `modifiedTime` exactly as Drive returns it, plus `+d1` (this
+     mapping's version), for example `2026-09-29T08:12:44.512Z+d1`.
+   - `title`: the file `name`. `text`: the exported text.
+   - `fields`, in this order, dropping empty values:
+     `{"mime_type": "<mimeType>", "modified_time": "<modifiedTime>", "export_format": "text/markdown" or "text/plain", "drive_url": "<webViewLink>"}`.
+   - `classification`: `INTERNAL` by default (quotable on private repositories only). The human
+     can set `CONFIDENTIAL` (used in reviews, never quoted) or `PUBLIC` per file or for all files
+     in step 5.
+5. **Secret files.** A file the human calls secret is not exported. Send only SECRET markers (3.1.4
+   shape) for `gdrive:<file id>` and every stored `gdrive:<file id>#s...` id, which erases any
+   stored copy.
+6. Apply the 150,000-character split from 3.1.6 with ids `gdrive:<file id>#s<NN>`.
 
 ## Step 5: manifest, then ask
 
@@ -255,11 +300,13 @@ TEMPLATE) are only counted in `Excluded`. A draft is counted only under drafts, 
 type. Then:
 
 ```
-heyGRC org: <org_id>            Probo organization: <name>
+heyGRC org: <org_id>            Probo organization: <name, or "not used">
 Would send (source probo):
   policy_section  <n>  (PUBLIC <a>, INTERNAL <b>, CONFIDENTIAL <c>; <k> split into sections)
   control         <n>  vendor <n>  risk <n>  data_category <n>
-Would send (source drive): policy_section <n>
+Would send (source drive): policy_section <n> new, <n> changed; <n> unchanged, not re-sent
+  <name>  <Google Doc|md|txt|...>  modified <modifiedTime>  gdrive:<id>  <INTERNAL|CONFIDENTIAL|PUBLIC>  <new|changed|unchanged>
+  ...
 Withheld:  SECRET <n> (marker only, no content)
 Excluded:  <p> published REGISTER/RECORD/REPORT/TEMPLATE docs, <d> drafts (<m> of them policy-type, listed above), <n> unreadable Drive files,
            signatures, approvals and people fields (always)
@@ -268,11 +315,12 @@ Kinds with zero objects (not synced, no removals this run): <kinds or "none">
 Structured records classification: none (reviewer-only; answer "internal" to allow quotes on private repos)
 Full sync: kinds <list>. Anything heyGRC holds for these kinds that is not in this list is marked
 for removal and HELD for your approval; nothing is deleted automatically.
-Send? (yes / no / internal / include <type>)
+Send? (yes / no / internal / include <type> / confidential <file or "drive"> / public <file> / secret <file>)
 ```
 
-Wait for the answer. `no`: stop. `include <type>` or `internal`:
-update, reprint, ask again. Only `yes` continues. With `--yes`, print the manifest and continue.
+List every Drive file on its own line, even unchanged ones. Wait for the answer. `no`: stop.
+`include <type>`, `internal`, `confidential ...`, `public ...` or `secret ...`: update, reprint, ask
+again (a changed disclosure makes an unchanged file changed). Only `yes` continues. With `--yes`, print the manifest and continue.
 
 ## Step 6: push
 
@@ -311,8 +359,14 @@ update, reprint, ask again. Only `yes` continues. With `--yes`, print the manife
    The response's `removals.held` lists objects heyGRC had that Probo no longer lists. They are
    **held**, not deleted: the GRC lead approves removals in heyGRC. If `removals.held_batch` is
    true, more than 20% of the source would disappear, so the whole removal set is held as one
-   batch. Tell the human this in one sentence. Drive gets no final sync unless the human says the
-   named files are the complete Drive set; then send the same call with `"source": "drive"`.
+   batch. Tell the human this in one sentence.
+
+   **Drive.** No final sync unless the human says the named files are the complete Drive set of
+   this heyGRC org (anything else the org holds from Drive, pushed by anyone, would be held for
+   removal). Then send the same call with `"source": "drive"`, `"kinds": ["policy_section"]` and
+   `present_ids` = every `gdrive:` id built this run, **plus the stored ids of the unchanged files
+   skipped in 4.2** and of SECRET markers. Same rule as Probo: only when every drive batch returned
+   200.
 
 ## Step 7: report
 
@@ -355,7 +409,7 @@ update, reprint, ask again. Only `yes` continues. With `--yes`, print the manife
 | 5xx | Server error | Retry once after 10 seconds, then stop and report the `X-Request-Id`. |
 | result `rejected`, reason `classification_secret` | SECRET marker accepted; any stored copy erased | Report as withheld (expected). |
 | result `rejected`, reason `text_too_large` / `fields_too_large` | Object over 200,000 chars or fields over 32,000 | Report; split sections smaller next run. |
-| result `rejected`, status 409, reason `version_conflict` | Same version, different content | Report; the Probo record changed without a new version. |
+| result `rejected`, status 409, reason `version_conflict` | Same version, different content | Probo: report; the record changed without a new version. Drive: the export differs from the stored copy of the same Drive revision (usually a different Drive tool); resend that object once with `upstream_version` `<modifiedTime>+d1-<first 8 hex of sha256 of the text>`. |
 | result `rejected`, reason `fields_key_collision` | Two `fields` keys collide after normalization | Report; the object was not stored. |
 | result `rejected`, status 409, reason `stale_version` | A replay of an older version that is no longer current | Skip and report. |
 | result `rejected`, reason `not_processed` | The server did not process this object | Report; re-run later. |
