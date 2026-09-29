@@ -46,4 +46,12 @@ heyGRC never fails a check or blocks a merge; it informs the humans and agents s
 Public repositories are always free. Private repos: 25 reviews/month free; claiming starts a 14-day
 unlimited-private trial.
 
+## Context setup (your policies, controls, vendors)
+
+When the user asks to set up heyGRC context or sync their Probo policies, follow
+`skills/setup/SKILL.md` in this extension exactly: read-only Probo tool allowlist, published
+versions only, never SECRET content or people fields, a manifest and an explicit yes before any
+`PUT https://api.heygrc.com/v1/context`, and `HEYGRC_API_KEY` (scopes `context:read` +
+`context:write`) never printed.
+
 Docs: https://docs.heygrc.com/docs/setup-with-an-agent | Pricing: https://docs.heygrc.com/docs/pricing-and-plans
