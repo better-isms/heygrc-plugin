@@ -1,8 +1,16 @@
-# heyGRC for coding agents
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="assets/banner-light.png">
+  <img alt="heyGRC. Your policies live in a doc. Your engineering happens in GitHub. heyGRC brings one to the other." src="assets/banner-light.png" width="100%">
+</picture>
 
-**GRC compliance review for your pull requests.** heyGRC reviews each PR against ISO 27001, SOC 2,
-GDPR, the EU AI Act, DORA, NIS 2 and your own company profile, then posts inline findings, a neutral
-check run, and a sticky summary comment. Public repositories are free.
+[![Public repos free](https://img.shields.io/badge/public%20repos-free-0f172a?style=flat-square)](https://docs.heygrc.com/docs/pricing-and-plans) [![Reviews GitHub pull requests](https://img.shields.io/badge/reviews-GitHub%20pull%20requests-0f172a?style=flat-square)](https://github.com/apps/heygrc) [![Your own policies](https://img.shields.io/badge/checks-your%20own%20policies-0f172a?style=flat-square)](https://docs.heygrc.com/docs/team-rules) [![By ISMS Copilot](https://img.shields.io/badge/by-ISMS%20Copilot-0f172a?style=flat-square)](https://heygrc.com)
+
+# heyGRC reviews your pull requests against your own policies.
+
+Your policies stay where they already live. Your engineers stay in GitHub. When a change goes against one of your rules, heyGRC says so in the pull request, next to the line, quoting your own policy. It also checks the frameworks you select: ISO 27001, SOC 2, GDPR, the EU AI Act, DORA, NIS 2 and more.
+
+The call stays with your team: heyGRC never blocks a merge.
 
 By [Better ISMS](https://heygrc.com).
 
@@ -67,8 +75,15 @@ After install, ask the agent to set up heyGRC compliance review. Full steps: [SE
 
 ## What it does
 
-heyGRC runs as a GitHub App, so reviews happen server-side, not on your machine. On each pull request
-it posts:
+heyGRC runs as a GitHub App, so reviews happen server-side, not on your machine. It reads your rules
+from two places:
+
+- **Your policy documents**, linked once in the console (a link, or the folder where they live). On each
+  pull request it picks the rules that apply and quotes them in the finding.
+- **Team rules** in a `.heygrc.md` file in the repo, written as controls. See
+  [team rules](https://docs.heygrc.com/docs/team-rules).
+
+On each pull request it posts:
 
 - **Inline findings** on the exact lines that touch a compliance obligation, each with a control
   reference and a short reason.
@@ -77,9 +92,9 @@ it posts:
 
 ## Pricing
 
-- **Public repositories:** always free.
-- **Private repositories:** free up to 25 reviews per month. Claiming your install starts a 14-day
-  unlimited-private trial; after that, on-demand private reviews are $0.49 each.
+- **Public repositories:** free, up to 500 reviews per organization per month.
+- **Private repositories:** free for 10 pull requests a month. Claiming your install starts a 14-day
+  trial with up to 500 private PR reviews, no card. Paid plans start at $39 a month.
 
 See [pricing and plans](https://docs.heygrc.com/docs/pricing-and-plans).
 
