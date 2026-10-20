@@ -8,9 +8,9 @@
 
 # heyGRC reviews your pull requests against your own policies.
 
-Your policies stay where they already live. Your engineers stay in GitHub. When a change goes against one of your rules, heyGRC says so in the pull request, next to the line, quoting your own policy. It also checks the frameworks you select: ISO 27001, SOC 2, GDPR, the EU AI Act, DORA, NIS 2 and more.
+Your policies stay where they already live. Your engineers stay in GitHub. When a change looks like it goes against one of your rules, heyGRC flags it in the pull request, next to the line, and quotes the linked policy it relies on. It also checks the frameworks you select: ISO 27001, SOC 2, GDPR, the EU AI Act, DORA, NIS 2 and more.
 
-The call stays with your team: heyGRC never blocks a merge.
+The call stays with your team: heyGRC's check is neutral and does not block a merge on its own.
 
 By [Better ISMS](https://heygrc.com).
 
@@ -80,14 +80,14 @@ from two places:
 
 - **Your policy documents**, linked once in the console (a link, or the folder where they live). On each
   pull request it picks the rules that apply and quotes them in the finding.
-- **Team rules** in a `.heygrc.md` file in the repo, written as controls. See
+- **Team rules** in a `.heygrc.md` file in the repo, written as controls (the first 8,000 characters are read). See
   [team rules](https://docs.heygrc.com/docs/team-rules).
 
 On each pull request it posts:
 
 - **Inline findings** on the exact lines that touch a compliance obligation, each with a control
   reference and a short reason.
-- **A neutral check run.** heyGRC never fails a check or blocks a merge.
+- **A neutral check run.** heyGRC's check never fails, so it does not block a merge on its own.
 - **One sticky summary comment per PR**, updated in place.
 
 ## Pricing
